@@ -15,6 +15,8 @@ const PORTAL_OBJECT = "/org/freedesktop/portal/desktop";
 const PORTAL_INTERFACE = "org.freedesktop.portal.GlobalShortcuts";
 const sessionBus = dbus.sessionBus();
 let requestTokenCounter = 0;
+let session_handle = "";
+const shortcuts = {};
 
 function getRequestToken() {
     requestTokenCounter += 1;
@@ -30,18 +32,12 @@ function getRequestToken() {
 // }
 
 
-async function gotGSCreateSessionResponse(e: IpcMainInvokeEvent, result: dbus.Message) {
+async function gotGSCreateSessionResponse(e: IpcMainInvokeEvent) {
     const handleResponse = rat => e.sender.executeJavaScript(`Vencord.Plugins.plugins.DBusBindings.log('${rat}')`);
     // if (!results.body[0]) {
     //     e.sender.executeJavaScript(`Vencord.Plugins.plugins.DBusBindings.log('${JSON.stringify(results)}')`);
     // }
-    handleResponse("about to bind sc");
-    const obj = await sessionBus.getProxyObject(PORTAL_TARGET, PORTAL_OBJECT);
-
-    const globalShortcutsifate = obj.getInterface(PORTAL_INTERFACE);
-
-
-    const session_handle = result.body[1].session_handle.value;
+    // handleResponse("about to bind sc");
 
     const shortcuts = [
         [
@@ -90,7 +86,47 @@ async function gotGSCreateSessionResponse(e: IpcMainInvokeEvent, result: dbus.Me
     });
 
     const reply = await sessionBus.call(bindShortcut);
-    handleResponse(JSON.stringify(reply));
+    // handleResponse(JSON.stringify(reply));
+
+}
+
+export async function UpdateKeybind(keyBind: string) {
+
+}
+
+
+export async function listKeybinds(e: IpcMainInvokeEvent) {
+    const handleResponse = rat => e.sender.executeJavaScript(`Vencord.Plugins.plugins.DBusBindings.log('${rat}')`);
+    const listShortcuts = new Message({
+        interface: PORTAL_INTERFACE,
+        destination: PORTAL_TARGET,
+        path: PORTAL_OBJECT,
+        signature: "oa{sv}",
+        member: "ListShortcuts",
+        body: [
+            session_handle,
+            {}
+        ]
+    });
+
+    const reply = await sessionBus.call(listShortcuts);
+    const returnPromise = new Promise((res, rej) => {
+        sessionBus.on("message", msg => {
+            // handleResponse(msg.path);
+            // handleResponse(Object.keys(msg));
+            if (msg.path === reply.body[0] && msg.interface === "org.freedesktop.portal.Request" && msg.member === "Response") {
+
+                const shortcutsResponse = msg.body[1].shortcuts.value;
+                for (let i = 0; i < shortcutsResponse.length; i++) {
+                    handleResponse(shortcutsResponse[i]);
+                    shortcuts[shortcutsResponse[i][0]] = shortcutsResponse[i][1].trigger_description.value;
+                }
+                return res(shortcuts);
+            }
+        });
+
+    });
+    return returnPromise;
 
 }
 
@@ -127,7 +163,7 @@ export async function GScreateSession(e: IpcMainInvokeEvent) {
 
     const reply = await sessionBus.call(createSession);
     if (reply) {
-        handleResponse("got reply");
+        // handleResponse("got reply");
         // gotGSCreateSessionResponse(e, reply.body[0]);
 
 
@@ -146,12 +182,12 @@ export async function GScreateSession(e: IpcMainInvokeEvent) {
     //     member: "Response"
     // });
     // let rat2 = "";
-    handleResponse("test");
+    // handleResponse("test");
     //     handleResponse(JSON.stringify(msg));
     // });
 
     sessionBus.on("message", msg => {
-        handleResponse(msg.body[1]);
+        // handleResponse(msg.body[1]);
         // handleResponse(Object.keys(msg));
         if (msg.path === reply.body[0] &&
             msg.interface === "org.freedesktop.portal.Request"
@@ -159,7 +195,8 @@ export async function GScreateSession(e: IpcMainInvokeEvent) {
             // handle the method by sending a reply
             // console.error("DBUS", msg);
 
-            gotGSCreateSessionResponse(e, msg);
+            session_handle = msg.body[1].session_handle.value;
+            gotGSCreateSessionResponse(e);
             const handle = msg; // .body[1].session_handle.value;
             // handleResponse(JSON.stringify(handle));
             return true;
