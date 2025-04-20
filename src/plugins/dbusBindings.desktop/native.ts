@@ -41,7 +41,7 @@ async function gotGSCreateSessionResponse(e: IpcMainInvokeEvent) {
 
     const shortcuts = [
         [
-            "Vesktop",
+            "Vesktop5",
             {
                 "description": new Variant("s", "Generic"),
                 "preferred_trigger": new Variant("s", "CTRL+SHIFT+O")
@@ -60,7 +60,7 @@ async function gotGSCreateSessionResponse(e: IpcMainInvokeEvent) {
 
         ],
         [
-            "Vesktop2",
+            "Vesktop4",
             {
                 "description": new Variant("s", "Generic2"),
                 "preferred_trigger": new Variant("s", "CTRL+SHIFT+P")

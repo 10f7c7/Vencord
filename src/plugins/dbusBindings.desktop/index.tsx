@@ -177,7 +177,7 @@ export default definePlugin({
         // const bus = dbus.sessionBus();
         const Session = await Native.GScreateSession();
         shortcuts = await Native.listKeybinds();
-        console.log(shortcuts);
+        console.log("rat", shortcuts);
         // console.log("rat", Session);
         // this.startDbus();
 
